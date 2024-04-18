@@ -45,14 +45,10 @@ void keyPressed() {
     eyeX += speed;
     centerX += speed;
   }
-  // touche U permet de monter en altitude
-  else if (keyCode == 85) {
+  // pour monter 
+  if (keyCode == 'U')
     eyeZ += speed;
-    centerZ += speed;
-  }
-  // touche D du clavier permet de descendre en altitude
-  else if (keyCode == 68) {
-    eyeZ = max(eyeZ - speed, -180); // au-délà de 180, soit on "rentre dans" le terrain soit on va en-dessous de la map et il n'y a plus rien
-    centerZ = max(centerZ - speed, -180);
-  }
+  // pour descendre, inutile d'aller plus bas que -180, on se retrouvera soit "dans" le terrain soit en-dessous (au niveau de l'espace)
+  else if (keyCode == 'D')
+    eyeZ = max(eyeZ - speed, -180);
 }

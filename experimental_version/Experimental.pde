@@ -56,11 +56,11 @@ void keyPressed() {
   // CAS Où L'ON REGARDE COMPLèTEMENT À DROITE
     moveDirections(LEFT, RIGHT, DOWN, UP, speed);
     
-  // U key -> pour monter 
-  if (keyCode == 85)
+  // pour monter 
+  if (keyCode == 'U')
     eye.z += speed;
-  // D key -> pour descendre, inutile d'aller plus bas que -180, on se retrouvera soit "dans" le terrain soit en-dessous (au niveau de l'espace)
-  else if (keyCode == 68)
+  // pour descendre, inutile d'aller plus bas que -180, on se retrouvera soit "dans" le terrain soit en-dessous (au niveau de l'espace)
+  else if (keyCode == 'V')
     eye.z = max(eye.z - speed, -180);
 }
 
