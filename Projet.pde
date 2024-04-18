@@ -21,8 +21,8 @@ void setup() {
 
 
 void draw() {
-  background(204);
-  translate(width/2, height/2, 0);
+  background(200);
+  //translate(width/2, height/2, 0);
   camera(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ);
   shader(myShader);
   shape(model);
@@ -55,5 +55,4 @@ void keyPressed() {
     eyeZ = max(eyeZ - speed, -180); // au-délà de 180, soit on "rentre dans" le terrain soit on va en-dessous de la map et il n'y a plus rien
     centerZ = max(centerZ - speed, -180);
   }
-  redraw();
 }

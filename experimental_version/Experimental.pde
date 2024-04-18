@@ -14,7 +14,7 @@ void setup() {
 
 void draw() {
   background(200);
-  translate(width/2, height/2, 0);
+  //translate(width/2 , height/2, 0);
   camera(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z);
   shader(myShader);
   shape(model);
