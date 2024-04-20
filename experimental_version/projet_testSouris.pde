@@ -18,18 +18,14 @@ void setup() {
   perspective(PI/2, float(width)/height, 1, 1500);
   noCursor();
   pylons = createShape(GROUP);
-  // Create and position pylons here
   for (int i = 0; i < numPylons; i++) {
-    // Calculate pylon positions and use getTerrainAltitude(x, y) to get Z
-    float pylonX = 0; // Your logic to determine pylon X position
-    float pylonY = i*100; // Your logic to determine pylon Y position
+    float pylonX = 0;
+    float pylonY = i*100; 
     float pylonZ = -150;
 
-    // Create a pylon
     PShape pylon = createPylonModel();
     pylon.translate(pylonX, pylonY, pylonZ);
 
-    // Add the pylon to the group
     pylons.addChild(pylon);
   }
 }
