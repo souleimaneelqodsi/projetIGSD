@@ -5,6 +5,7 @@ PShape ligne;
 PVector eye = new PVector(width / 2, height / 2, -180);
 PVector center = new PVector(width / 2, 0, -180);
 PVector up = new PVector(0, 0, -1);
+
 float X = 20;
 float Y = 100;
 int nbPylones = 25;
@@ -22,7 +23,7 @@ void setup() {
   myShader = loadShader("myFragmentShader.glsl", "myVertexShader.glsl");
   perspective(PI/2, width/height, 1, 1500);
  
-
+ 
   for(int i = 0; i < nbPylones; i++){
     pylones.add(createPylonModel());
     Y-= shiftY;
@@ -46,7 +47,6 @@ void draw(){
     translate(coordPylones.get(j).x, coordPylones.get(j).y, coordPylones.get(j).z);
     scale(0.025);
     rotateX(-PI/2);
-    rotateY(PI/2);
     shape(pylones.get(j));
     popMatrix();
   }
@@ -80,8 +80,6 @@ void draw(){
   pop();
   
   
-  /*translate(20, 100, -170);
-  sphere(10);*/
   
 }
 
