@@ -18,14 +18,15 @@ float upZ = -1;
 void setup() {
   size(800, 800, P3D);
   model = loadShape("hypersimple.obj");
-  myShader = loadShader("myFragmentShader.glsl", "myVertexShader.glsl");
-  pylonModel = createPylonModel();
+  myShader = loadShader("fragmentShader.glsl", 
+               "vertexShader.glsl");
+  //pylonModel = createPylonModel();
   perspective(PI/2, width/height, 1, 1500);
   
-  pylonsGroup = createPylonModel();
-  PVector DebLigne = new PVector(20, 100); //point de depart de la ligne electrique
-  PVector FinLigne = new PVector(40, -115); ////point d'arrivé de la ligne electrique
-  createLignePylon(DebLigne, FinLigne);
+  
+  //PVector DebLigne = new PVector(20, 100); //point de depart de la ligne electrique
+  //PVector FinLigne = new PVector(40, -115); ////point d'arrivé de la ligne electrique
+   pylonsGroup = createPylones();
 }
 
 void draw(){
@@ -35,13 +36,7 @@ void draw(){
   shader(myShader);
   shape(model);
  
- 
-   pushMatrix();
-   scale(0.025);
-   rotateX(-PI/2);
-   shape(pylonsGroup);
-   popMatrix();
-  
+ shape(pylonsGroup);  
   
   push();
   
@@ -220,8 +215,8 @@ PShape triangleDecort (float x, float y, float largeur, float hauteur, PVector n
 }
 
 float getTerrainAltitude(float x, float y) {
-  float altitudeZ = 0; //stocker l'altitude 
-  float distanceMin = Float.MAX_VALUE; //stocker la distance la plus proche
+  float altitudeZ = model.getChild(0).getVertex(0).z; //stocker l'altitude 
+  float distanceMin = dist(x,y,model.getChild(0).getVertex(0).x,model.getChild(0).getVertex(0).y); //stocker la distance la plus proche
   
   // Parcourir tous les points du terrain
   for (int i = 0; i < model.getChildCount(); i++) {
@@ -245,7 +240,31 @@ float getTerrainAltitude(float x, float y) {
   return altitudeZ; // Retourner l'altitude la plus proche
 }
 
-
+/*
+ y = -10.75x + 315 est l'équation de la droite qui passe par les deux entre lesquels on va plasser nos pylones
+ nos pylones vont etre posé sur cette droite */
+ 
+ /** fonction qui crée et place les 25 pylones */
+ PShape createPylones () {
+   PShape res = createShape(GROUP);
+   for (int i =0; i<25; i++){
+   
+    float x = 20 + (20.0/24.0)*i; 
+    float y = -10.75 * x + 315.0; 
+    float z = getTerrainAltitude(x,y);
+    
+    PShape pylone = createPylonModel();
+    pylone.rotateX(-PI/2);
+    pylone.scale(0.2);
+    pylone.translate(x,y,z);
+    
+    res.addChild(pylone);
+   }
+   return res;
+ }
+ 
+ 
+/*
 void createLignePylon(PVector DebLigne, PVector FinLigne){
     PVector direction = PVector.sub(DebLigne, FinLigne);
     float distance = direction.mag(); //calcule la longueur du vecteur
@@ -260,4 +279,4 @@ void createLignePylon(PVector DebLigne, PVector FinLigne){
       pylonsGroup.addChild(pylon); // Ajout du pylône au groupe 
     }
   
-}
+}*/
