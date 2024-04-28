@@ -12,20 +12,20 @@ int nbPylones = 25;
 // en Y les pylones vont de 100 à -115
 float shiftY = (100 - (-115)) / nbPylones;
 // et en X ils vont de 20 à 40
-float shiftX = (40 - 20) /nbPylones;
-ArrayList<PShape> pylones = new ArrayList<>();
+float shiftX = (40 - 20) / nbPylones;
+ArrayList<Pylone> pylones = new ArrayList<>();
 ArrayList<PVector> coordPylones = new ArrayList<>();
-
 
 void setup() {
   size(800, 800, P3D);
   model = loadShape("hypersimple.obj");
   myShader = loadShader("myFragmentShader.glsl", "myVertexShader.glsl");
   perspective(PI/2, width/height, 1, 1500);
- 
- 
-  for(int i = 0; i < nbPylones; i++){
-    pylones.add(createPylonModel());
+
+
+  for (int i = 0; i < nbPylones; i++) {
+    Pylone p = new Pylone();
+    pylones.add(p);
     Y-= shiftY;
     X += shiftX;
     coordPylones.add(new PVector(X, Y, getTerrainAltitude(X, Y)));
@@ -33,54 +33,245 @@ void setup() {
   noCursor();
 }
 
-void draw(){
+
+class Pylone {
+
+  final PVector leftAttach, rightAttach;
+  final PShape shape = createShape(GROUP);
+  final float hauteurPylone = 300; // Hauteur du pylône
+  final float largeurPylone = 70; // Largeur du pylône
+
+
+  public float getHauteurPylone(){
+    return hauteurPylone;
+  }
+
+  public PVector getLeftAttach() {
+    return leftAttach;
+  }
+  public PVector getRightAttach() {
+    return rightAttach;
+  }
+  public PShape getShape() {
+    return shape;
+  }
+
+
+  public Pylone() {
+    //PShape shape = createShape(GROUP);
+
+    //translate(X,Y,Z);
+
+    //partie pour la structure du pylone
+    PShape base = createShape();
+    base.beginShape(TRIANGLE);
+    base.noFill();
+    base.stroke(0, 0, 0);
+
+    base.vertex(-largeurPylone/2.0, 0, largeurPylone/2.0);
+    base.vertex(largeurPylone/2.0, 0, largeurPylone/2.0);
+    base.vertex(0, -hauteurPylone, 0);
+
+    base.vertex(largeurPylone/2.0, 0, largeurPylone/2.0);
+    base.vertex(largeurPylone/2.0, 0, -largeurPylone/2.0);
+    base.vertex(0, -hauteurPylone, 0);
+
+    base.vertex(largeurPylone/2.0, 0, -largeurPylone/2.0);
+    base.vertex(-largeurPylone/2.0, 0, -largeurPylone/2.0);
+    base.vertex(0, -hauteurPylone, 0);
+
+    base.vertex(-largeurPylone/2.0, 0, -largeurPylone/2.0);
+    base.vertex(-largeurPylone/2.0, 0, largeurPylone/2.0);
+    base.vertex(0, -hauteurPylone, 0);
+
+    base.endShape();
+
+    //partie pour l'attache fil electrique
+    PShape triangleAttache = createShape();
+    triangleAttache.beginShape(TRIANGLE);
+    triangleAttache.noFill();
+    triangleAttache.stroke(0, 0, 0);
+
+
+    float xx = largeurPylone;
+    float yy = -hauteurPylone*0.9;
+    triangleAttache.vertex(-xx, yy, 0);
+    triangleAttache.vertex(xx, yy, 0);
+    triangleAttache.vertex(0, -hauteurPylone*0.7, 0);
+
+
+    triangleAttache.endShape();
+
+    leftAttach = new PVector(-xx, yy, 0);
+    rightAttach = new PVector(xx, yy, 0);
+
+    shape.addChild(base);
+    shape.addChild(triangleAttache);
+
+
+    // on determine l'equation du plan ax+by+cz+d = 0 qui passe par un des triangle (face de la pyramyde)
+    PVector p1 = new PVector (largeurPylone/2.0, 0, largeurPylone/2.0);
+    PVector p2 = new PVector (0, -hauteurPylone, 0);
+    PVector p3 = new PVector (-largeurPylone/2.0, 0, largeurPylone/2.0);
+
+    PVector v1 = new PVector (p2.x-p1.x, p2.y-p1.y, p2.z-p1.z);
+    PVector v2 = new PVector (p3.x-p1.x, p3.y-p1.y, p3.z-p1.z);
+
+    PVector normal = v1.cross(v2);
+
+    float a = normal.x;
+    //float b = normal.y;
+    float c = normal.z;
+    float d = a*(largeurPylone/2.0) - c*largeurPylone/2.0; // -largeur/2.0, 0, largeur/2.0
+
+
+    /* avec le theoreme de thalese la largeur du triangle en fonction de y est
+     larg(y) = (h+y)/h * l    / h etant hauteur du grand triangle et l sa largeur !! le + y c'est un - -y parce que le y est inversé en processing
+     */
+
+    for (float y =0; y>=-hauteurPylone + 20; y-=20.0) {
+
+
+      float largY = ((hauteurPylone+y)/hauteurPylone)* largeurPylone;
+
+      // face 1
+      PShape decoFace1 = triangleDecor (-largY/2.0, y, largY, 40, normal, d);
+      shape.addChild(decoFace1);
+
+      // face 2
+      PShape decoFace2 = triangleDecor (-largY/2.0, y, largY, 40, normal, d);
+      decoFace2.rotateY(PI/2);
+      shape.addChild(decoFace2);
+
+      // face 3
+      PShape decoFace3 = triangleDecor (-largY/2.0, y, largY, 40, normal, d);
+      decoFace3.rotateY(-PI/2);
+      shape.addChild(decoFace3);
+
+      // face 4
+      PShape decoFace4 = triangleDecor (-largY/2.0, y, largY, 40, normal, d);
+      decoFace4.rotateY(-PI/2);
+      decoFace4.rotateY(-PI/2);
+      shape.addChild(decoFace4);
+    }
+  }
+}
+
+/* x et y du coin bas gauche du triangle */
+PShape triangleDecor (float x, float y, float largeur, float hauteur, PVector normal, float d) {
+  float a = normal.x;
+  float b = normal.y;
+  float c = normal.z;
+
+  float z = -(a*x+b*y+d)/c;
+  float zP = -(b*(-hauteur+y)+d)/c;
+
+  PShape face = createShape();
+  face.beginShape(TRIANGLE);
+  face.noFill();
+  face.stroke(0, 0, 0);
+
+  face.vertex(x, y, z);
+  face.vertex(x+largeur, y, z);
+  face.vertex(0, -hauteur+y, zP);
+
+  face.endShape();
+
+  return face;
+}
+
+float getTerrainAltitude(float x, float y) {
+  float altitudeZ = 0; //stocker l'altitude
+  float distanceMin = Float.MAX_VALUE; //stocker la distance la plus proche
+
+  // Parcourir tous les points du terrain
+  for (int i = 0; i < model.getChildCount(); i++) {
+    PShape child = model.getChild(i);
+    if (child.getVertexCount() > 0) {
+      // Parcourir tous les vertices du child
+      for (int j = 0; j < child.getVertexCount(); j++) {
+        float vertexX = child.getVertex(j).x;
+        float vertexY = child.getVertex(j).y;
+        float vertexZ = child.getVertex(j).z;
+        float distance = dist(vertexX, vertexY, x, y); // Calculer la distance entre le point actuel et la position x, y donnée
+
+        if (distance < distanceMin) {
+          distanceMin = distance;
+          altitudeZ = vertexZ;
+        }
+      }
+    }
+  }
+
+  return altitudeZ; // Retourner l'altitude la plus proche
+}
+
+
+void drawLinePylones() {
+
+  // placement pylones
+  for (int j = 1; j < nbPylones + 1; j++) {
+    pushMatrix();
+    translate(coordPylones.get(j - 1).x, coordPylones.get(j - 1).y, coordPylones.get(j - 1).z);
+    scale(0.025);
+    rotateX(-PI/2);
+    Pylone pyloneA = pylones.get(j-1);
+    Pylone pyloneB = pylones.get(j);
+    shape(pyloneA.getShape());
+    float xDeb, xMid, xFin, yDeb, yMid, yFin, zDeb, zMid, zFin;
+    float hauteur = pyloneA.getHauteur();
+    xDeb = pyloneA.getLeftAttach().x;
+    yDeb = pyloneA.getLeftAttach().y;
+    zDeb = getTerrainAltitude(xDeb, yDeb) + ;
+    xMid = xDeb + shiftX/2;
+    yMid = yDeb + shiftY/2;
+    xFin = pyloneB.getLeftAttach().x;
+    yFin = pyloneB.getLeftAttach().y;
+    beziers(xDeb, yDeb,  
+    
+    
+    popMatrix();
+  }
+}
+
+
+void draw() {
   background(200);
   translate(width/2, height/2, 0);
-  
+
   camera(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z);
   shader(myShader);
   shape(model);
-    
-  for(int j = 0; j < nbPylones; j++){
-    
-    pushMatrix();
-    translate(coordPylones.get(j).x, coordPylones.get(j).y, coordPylones.get(j).z);
-    scale(0.025);
-    rotateX(-PI/2);
-    shape(pylones.get(j));
-    popMatrix();
-  }
-  
+
+  drawLinePylones();
+
   push();
-  
+
   translate(0, 0, -190);
-   
+
   //dessin du repère
-   //Axe X (rouge)
+  //Axe X (rouge)
   stroke(255, 0, 0);
   beginShape(LINES);
-  vertex(-300, 0,0);
+  vertex(-300, 0, 0);
   vertex(0, 0, 0);
   endShape();
 
   // Axe Y (vert)
   stroke(0, 255, 0);
   beginShape(LINES);
-  vertex(0, 0,0);
+  vertex(0, 0, 0);
   vertex(0, 300, 0);
   endShape();
 
-   //Axe Z (bleu)
+  //Axe Z (bleu)
   stroke(0, 0, 255);
   beginShape(LINES);
-  vertex(0,0, 0);
+  vertex(0, 0, 0);
   vertex(0, 0, 300);
   endShape();
-  
+
   pop();
-  
-  
-  
 }
 
 
@@ -133,178 +324,3 @@ void mouseMoved() {
   center.z = map(mouseY, 0, height, 1000, -1000);
   center.y = mouseY;
 }
-
-PShape createPylonModel() {
-  float hauteurPylone = 300; // Hauteur du pylône
-  float largeurPylone = 70; // Largeur du pylône
-  
-  PShape pylone = createShape(GROUP);
-  
-  //translate(X,Y,Z);
-  
-  //partie pour la structure du pylone
-  PShape base = createShape();
-  base.beginShape(TRIANGLE);
-  base.noFill();
-  base.stroke(0,0,0);
-  
-  base.vertex(-largeurPylone/2.0, 0, largeurPylone/2.0);
-  base.vertex(largeurPylone/2.0, 0,largeurPylone/2.0);
-  base.vertex(0, -hauteurPylone,0);
-  
-  base.vertex(largeurPylone/2.0, 0,largeurPylone/2.0);
-  base.vertex(largeurPylone/2.0, 0,-largeurPylone/2.0);
-  base.vertex(0, -hauteurPylone,0);
-  
-  base.vertex(largeurPylone/2.0, 0,-largeurPylone/2.0);
-  base.vertex(-largeurPylone/2.0, 0,-largeurPylone/2.0);
-  base.vertex(0, -hauteurPylone,0);
-  
-  base.vertex(-largeurPylone/2.0, 0,-largeurPylone/2.0);
-  base.vertex(-largeurPylone/2.0, 0,largeurPylone/2.0);
-  base.vertex(0, -hauteurPylone,0);
-  
-  base.endShape();
-  
-  //partie pour l'attache fil electrique
-  PShape triangleAttache = createShape();
-  triangleAttache.beginShape(TRIANGLE);
-  triangleAttache.noFill();
-  triangleAttache.stroke(0,0,0);
-  
-  triangleAttache.vertex(-largeurPylone, -hauteurPylone*0.9,0 );
-  triangleAttache.vertex(largeurPylone, -hauteurPylone*0.9,0);
-  triangleAttache.vertex(0, -hauteurPylone*0.7,0);
-  
-  
-  triangleAttache.endShape();
-  
-  pylone.addChild(base);
-  pylone.addChild(triangleAttache);
-  
-  
-  // on determine l'equation du plan ax+by+cz+d = 0 qui passe par un des triangle (face de la pyramyde)
-  PVector p1 = new PVector (largeurPylone/2.0, 0,largeurPylone/2.0);
-  PVector p2 = new PVector (0, -hauteurPylone,0);
-  PVector p3 = new PVector (-largeurPylone/2.0, 0,largeurPylone/2.0);
-
-  PVector v1 = new PVector (p2.x-p1.x,p2.y-p1.y,p2.z-p1.z);
-  PVector v2 = new PVector (p3.x-p1.x,p3.y-p1.y,p3.z-p1.z);
-  
-  PVector normal = v1.cross(v2);
-  
-  float a = normal.x;
-  //float b = normal.y;
-  float c = normal.z;
-  float d = a*(largeurPylone/2.0) - c*largeurPylone/2.0; // -largeur/2.0, 0, largeur/2.0
-  
-  
-  /* avec le theoreme de thalese la largeur du triangle en fonction de y est 
-  larg(y) = (h+y)/h * l    / h etant hauteur du grand triangle et l sa largeur !! le + y c'est un - -y parce que le y est inversé en processing
-  */
-  
-  for (float y =0; y>=-hauteurPylone + 20;y-=20.0){
-     
-     
-     float largY = ((hauteurPylone+y)/hauteurPylone)* largeurPylone;
-     
-     // face 1
-     PShape decoFace1 = triangleDecort (-largY/2.0 ,y,largY,40, normal,d);
-     pylone.addChild(decoFace1);
-     
-     // face 2
-     PShape decoFace2 = triangleDecort (-largY/2.0 ,y,largY,40, normal,d);
-     decoFace2.rotateY(PI/2);
-     pylone.addChild(decoFace2);
-     
-     // face 3
-     PShape decoFace3 = triangleDecort (-largY/2.0 ,y,largY,40, normal,d);
-     decoFace3.rotateY(-PI/2);
-     pylone.addChild(decoFace3);
-     
-     // face 4
-     PShape decoFace4 = triangleDecort (-largY/2.0 ,y,largY,40, normal,d);
-     decoFace4.rotateY(-PI/2);
-     decoFace4.rotateY(-PI/2);
-     pylone.addChild(decoFace4);
-    
-  }
-    
-  return pylone;
-}
-
-/* x et y du coin bas gauche du triangle */
-PShape triangleDecort (float x, float y, float largeur, float hauteur, PVector normal,float d){
-    float a = normal.x;
-    float b = normal.y;
-    float c = normal.z;
-   
-    float z = -(a*x+b*y+d)/c;
-    float zP = -(b*(-hauteur+y)+d)/c;
-    
-   PShape face = createShape();
-  face.beginShape(TRIANGLE);
-  face.noFill();
-  face.stroke(0,0,0);
- 
-  face.vertex(x, y, z);
-  face.vertex(x+largeur, y,z);
-  face.vertex(0, -hauteur+y,zP);
-
-  face.endShape();
-  
-  return face;
-}
-
-float getTerrainAltitude(float x, float y) {
-  float altitudeZ = 0; //stocker l'altitude 
-  float distanceMin = Float.MAX_VALUE; //stocker la distance la plus proche
-  
-  // Parcourir tous les points du terrain
-  for (int i = 0; i < model.getChildCount(); i++) {
-    PShape child = model.getChild(i);
-    if (child.getVertexCount() > 0) {
-      // Parcourir tous les vertices du child
-      for (int j = 0; j < child.getVertexCount(); j++) {
-        float vertexX = child.getVertex(j).x;
-        float vertexY = child.getVertex(j).y;
-        float vertexZ = child.getVertex(j).z;
-        float distance = dist(vertexX, vertexY, x, y); // Calculer la distance entre le point actuel et la position x, y donnée
-        
-        if (distance < distanceMin) {
-          distanceMin = distance;
-          altitudeZ = vertexZ;
-        }
-      }
-    }
-  }
-  
-  return altitudeZ; // Retourner l'altitude la plus proche
-}
-
-
-/*void createLignePylon(PVector DebLigne, PVector FinLigne){
-    PVector direction = PVector.sub(DebLigne, FinLigne);
-    float distance = direction.mag(); //calcule la longueur du vecteur
-    float espace = distance/24.0; // espace entre les pylones
-    
-    for( int i =0; i<25; i++){
-      PVector position = PVector.add(DebLigne, PVector.mult(direction, espace * i)); 
-      float z = getTerrainAltitude(position.x, position.y);
-      
-      PShape pylon = createPylonModel(); // Création du pylône
-      pylon.translate(position.x, position.y, z); // Positionnement du pylône
-      pylonsGroup.addChild(pylon); // Ajout du pylône au groupe 
-    }*/
-    
-/*void createPyloneLine(int nbPylones){
-  float X = 20;
-  float Y = 100;
-  PShape pylone;
-  float shift = (158 - Y) / nbPylones;
-  for(int i = 0; i < nbPylones; i++){
-    pylone = createPylonModel();
-    translate(X, Y, -170);
-    pylonsGroup.addChild(pylone);
-    Y += shift;
-  }*/
