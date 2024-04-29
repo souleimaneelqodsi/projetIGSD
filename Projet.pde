@@ -1,7 +1,5 @@
 PShape model;
 PShader myShader;
-PShape pylonsGroup;
-PShape ligne;
 PVector eye = new PVector(width / 2, height / 2, -180);
 PVector center = new PVector(width / 2, 0, -180);
 PVector up = new PVector(0, 0, -1);
@@ -9,6 +7,7 @@ PVector up = new PVector(0, 0, -1);
 float X = 20;
 float Y = 100;
 int nbPylones = 25;
+
 // en Y les pylones vont de 100 à -115
 float shiftY = (100 - (-115)) / nbPylones;
 // et en X ils vont de 20 à 40
@@ -17,7 +16,13 @@ ArrayList<Pylone> pylones = new ArrayList<>();
 ArrayList<PVector> coordPylones = new ArrayList<>();
 
 
+boolean pylonesOK = true;
+boolean terrainOK = true;
+boolean repereOK = true;
+
+
 // TODO : optimize code and divide into multiple files
+// TODO : add comments and documentation where most needed
 
 
 void setup() {
@@ -27,14 +32,13 @@ void setup() {
   perspective(PI/2, width/height, 1, 1500);
 
 
-  for (int i = 0; i < nbPylones; i++) {
+  for (int i = 0; i < nbPylones + 1; i++) {
     Pylone p = new Pylone();
     pylones.add(p);
     Y-= shiftY;
     X += shiftX;
     coordPylones.add(new PVector(X, Y, getTerrainAltitude(X, Y)));
   }
-  System.out.println(shiftY);
   noCursor();
 }
 
@@ -55,27 +59,17 @@ class Pylone {
     return largeurPylone;
   }
 
-  public PVector getLeftAttach() {
-    return leftAttach;
-  }
-  public PVector getRightAttach() {
-    return rightAttach;
-  }
   public PShape getShape() {
     return shape;
   }
 
 
   public Pylone() {
-    //PShape shape = createShape(GROUP);
-
-    //translate(X,Y,Z);
-
-    //partie pour la structure du pylone
     PShape base = createShape();
     base.beginShape(TRIANGLE);
     base.noFill();
-    base.stroke(0, 0, 0);
+    base.stroke(15);
+    base.strokeWeight(1.5);
 
     base.vertex(-largeurPylone/2.0, 0, largeurPylone/2.0);
     base.vertex(largeurPylone/2.0, 0, largeurPylone/2.0);
@@ -95,11 +89,12 @@ class Pylone {
 
     base.endShape();
 
-    //partie pour l'attache fil electrique
+    // partie pour l'attache fil electrique
     PShape triangleAttache = createShape();
     triangleAttache.beginShape(TRIANGLE);
     triangleAttache.noFill();
-    triangleAttache.stroke(0, 0, 0);
+    triangleAttache.stroke(15);
+    triangleAttache.strokeWeight(1.5);
 
 
     float xx = largeurPylone;
@@ -129,7 +124,6 @@ class Pylone {
     PVector normal = v1.cross(v2);
 
     float a = normal.x;
-    //float b = normal.y;
     float c = normal.z;
     float d = a*(largeurPylone/2.0) - c*largeurPylone/2.0; // -largeur/2.0, 0, largeur/2.0
 
@@ -167,18 +161,6 @@ class Pylone {
 }
 
 
-// getLargeur(), getHauteur()
-// x, y
-// z en fct de x et y
-/*
- float xx = largeurPylone;
- float yy = -hauteurPylone*0.9;
- newXXLeft = (xPyl - left.xx) * 0.05
- newYY = (yPyl + yy) * 0.05
- newXXRight = (xPyl - right.xx) * 0.05
- 
- */
-
 /* x et y du coin bas gauche du triangle */
 PShape triangleDecor (float x, float y, float largeur, float hauteur, PVector normal, float d) {
   float a = normal.x;
@@ -191,7 +173,8 @@ PShape triangleDecor (float x, float y, float largeur, float hauteur, PVector no
   PShape face = createShape();
   face.beginShape(TRIANGLE);
   face.noFill();
-  face.stroke(0, 0, 0);
+  face.stroke(15);
+  face.strokeWeight(1.5);
 
   face.vertex(x, y, z);
   face.vertex(x+largeur, y, z);
@@ -228,108 +211,107 @@ float getTerrainAltitude(float x, float y) {
   return altitudeZ; // Retourner l'altitude la plus proche
 }
 
-//TODO : correct ending and add bezier shape
+// la déclaration est ici pour signifier que c'est en rapport avec la fonction en-dessous, mais c'est bien une var. globale : 
+float lastZMid = 0;
 
-// fonction qui dessine des lignes électriques, fléchies si la distance entre les deux pylones est grande et tendues sinon
-void drawElectricLines(Pylone pyloneA, float xA, float yA, float zA, float xB, float yB, float zB) {
-  float xMid, yMid, zDeb, zMid, zFin;
-  float hauteur = pyloneA.getHauteur() - 70;
-  float largeur = pyloneA.getLargeur();
-  // partie gauche :
-  float xxDebLeft = xA - largeur * 0.025;
-  float xxDebRight = xA + largeur * 0.025;
-  zDeb = zA + (hauteur - hauteur*0.1)*0.025 + 1.6;// - hauteur*0.025*0.1);
-  xMid = xxDebLeft + shiftX/2;
-  yMid = yA + shiftY/2;
-  float xxFinLeft = xB - largeur * 0.025;
-  float xxFinRight = xB + largeur * 0.025;
-  zFin = zB + (hauteur - hauteur*0.1)*0.025 + 1.6;// - hauteur*0.025*0.1);
-  // on ne veut pas que si les pylones sont très rapprochés, que la ligne électrique dépasse la hauteur moyenne du segment les séparant
-  if (shiftY == 0) zMid = max(-202 + 100*(1./shiftY), (zDeb+zFin)/2);
-  // si jamais, ce qui peut difficilement arriver, shiftY est nul, on évite l'erreur de division et on met la hauteur moyenne entre les deux pylones
-  else zMid = (zDeb+zFin)/2;
-  System.out.println("-------- GAUCHE --------");
-  System.out.println("Début (x, y, z) : (" + xxDebLeft + ", " + yA + ", " + zDeb + ")");
-  System.out.println("Milieu (x, y, z) : (" + xMid + ", " + yMid + ", " + zMid + ")");
-  System.out.println("Fin (x, y, z) : (" + xxFinLeft + ", " + yB + ", " + zFin + ")");
-  //bezier(xxDebLeft, yA, zDeb, xMid, yMid, zMid, xMid, yMid, zMid, xxFinLeft, yB, zFin);
-  line(xxDebLeft, yA, zDeb, xxFinLeft, yB, zFin);
-  // partie droite :
-  xMid = xxDebRight + shiftX/2;
-  yMid = yA + shiftY/2;
-  if (shiftY == 0) zMid = max(-202 + 15*(1./shiftY), (zDeb+zFin)/2);
-  else zMid = (zDeb+zFin)/2;
-  System.out.println("-------- DROITE --------");
-  System.out.println("Début (x, y, z) : (" + xxDebRight + ", " + yA + ", " + zDeb + ")");
-  System.out.println("Milieu (x, y, z) : (" + xMid + ", " + yMid + ", " + zMid + ")");
-  System.out.println("Fin (x, y, z) : (" + xxFinRight + ", " + yB + ", " + zFin + ")");
-  //bezier(xxDebRight, yA, zDeb, xMid, yMid, zMid, xMid, yMid, zMid, xxFinRight, yB, zFin);
-  line(xxDebRight, yA, zDeb, xxFinRight, yB, zFin);
+// (xA, yA, zA) sont les coordonnées du pylône de départ des lignes
+// et (xB, yB, zB) celles du pylôle d'arrivée
+void drawElectricLines(float hauteur, float largeur, float xA, float yA, float zA, float xB, float yB, float zB) {
+  float antiGravity = 30; // moins cette valeur est élevée, plus la gravité est forte
+  float xMid, yMid, zStart, zMid, zEnd;
+  float XStartLeft = xA - largeur * 0.025;
+  float XStartRight = xA + largeur * 0.025;
+  // ci-dessous 1.6 est une valeur purement arbitraire car malgré la précision du calcul nous avons constaté qu'un décalage était quand même présent
+  zStart = zA + (hauteur - hauteur*0.1)*0.025 + 1.6;
+  xMid = XStartLeft;
+  yMid = (yA + yB)/2; // point de courbure de Bézier se trouve au point médiant du segment de distance séparant les deux pylones
+  float XEndLeft = xB - largeur * 0.025;
+  float XEndRight = xB + largeur * 0.025;
+  zEnd = zB + (hauteur - hauteur*0.1)*0.025 + 1.6;
+
+  if (lastZMid == 0) zMid = getTerrainAltitude(xMid, yMid) + antiGravity*(1/shiftY);
+  // on fait la moyenne (avec une petite pondération) entre la hauteur du point de courbure et le précédent dans le dessin pour rendre plus naturelle
+  // la gravité des lignes en évitant les "brusques" irrégularités de trajectoire et l'hypersensibilité aux changements d'altitude
+  else zMid = ((getTerrainAltitude(xMid, yMid) + antiGravity*(1/shiftY)) + lastZMid)/2;
+  // on fait une dernière manip : on vérifie que le point ne va pas en dessous du sol sinon la ligne traversera celui-ci
+  zMid = max(zMid, getTerrainAltitude(xMid, yMid + 5));
+  lastZMid = zMid;
+  bezier(XStartLeft, yA, zStart, xMid, yMid, zMid, xMid, yMid, zMid, XEndLeft, yB, zEnd);
+  xMid += 2 * largeur * 0.025;
+  bezier(XStartRight, yA, zStart, xMid, yMid, zMid, xMid, yMid, zMid, XEndRight, yB, zEnd);
 }
 
+
 void drawPylones() {
-  // placement pylones
-  for (int j = 1; j < nbPylones; j++) {
+  // placement pylônes
+  for (int j = 1; j < nbPylones + 1; j++) {
     pushMatrix();
     translate(coordPylones.get(j - 1).x, coordPylones.get(j - 1).y, coordPylones.get(j - 1).z);
     scale(0.025);
     rotateX(-PI/2);
     Pylone pyloneA = pylones.get(j-1);
-    //Pylone pyloneB = pylones.get(j);
     shape(pyloneA.getShape());
     popMatrix();
     noFill();
     stroke(0);
-    strokeWeight(1);
-    drawElectricLines(
-      pyloneA,
-      coordPylones.get(j - 1).x, coordPylones.get(j - 1).y, coordPylones.get(j - 1).z,
-      coordPylones.get(j).x, coordPylones.get(j).y, coordPylones.get(j).z
-      );
+    strokeWeight(2.5);
+    if (j < nbPylones)
+      //la condition ci-dessus permet d'éviter que des lignes ne soient tracées dans le vide après le dernier pylone
+      // (logiquement, le dernier pylone à tracer des lignes devant lui devrait être l'avant-dernier dans l'ordre de dessin)
+      drawElectricLines(
+        pyloneA.getHauteur() - 70, pyloneA.getLargeur(),
+        coordPylones.get(j - 1).x, coordPylones.get(j - 1).y, coordPylones.get(j - 1).z,
+        coordPylones.get(j).x, coordPylones.get(j).y, coordPylones.get(j).z
+        );
   }
 }
 
 
 void draw() {
-  background(200);
+  background(125, 205, 250);
   translate(width/2, height/2, 0);
 
   camera(eye.x, eye.y, eye.z, center.x, center.y, center.z, up.x, up.y, up.z);
-  shader(myShader);
-  shape(model);
+  if (terrainOK) {
+    shader(myShader);
+    shape(model);
+  }
 
-  drawPylones();
 
-  push();
-  
-  
-  //TODO : correct scaling
+  if (pylonesOK) drawPylones();
 
-  translate(0, 0, -190);
+  if (repereOK) {
 
-  //dessin du repère
-  //Axe X (rouge)
-  stroke(255, 0, 0);
-  beginShape(LINES);
-  vertex(-300, 0, 0);
-  vertex(0, 0, 0);
-  endShape();
+    push();
 
-  // Axe Y (vert)
-  stroke(0, 255, 0);
-  beginShape(LINES);
-  vertex(0, 0, 0);
-  vertex(0, 300, 0);
-  endShape();
+    //TODO : rectify scaling
 
-  //Axe Z (bleu)
-  stroke(0, 0, 255);
-  beginShape(LINES);
-  vertex(0, 0, 0);
-  vertex(0, 0, 300);
-  endShape();
+    translate(0, 0, -190);
 
-  pop();
+    //dessin du repère
+    //Axe X (rouge)
+    stroke(255, 0, 0);
+    beginShape(LINES);
+    vertex(-300, 0, 0);
+    vertex(0, 0, 0);
+    endShape();
+
+    // Axe Y (vert)
+    stroke(0, 255, 0);
+    beginShape(LINES);
+    vertex(0, 0, 0);
+    vertex(0, 300, 0);
+    endShape();
+
+    //Axe Z (bleu)
+    stroke(0, 0, 255);
+    beginShape(LINES);
+    vertex(0, 0, 0);
+    vertex(0, 0, 300);
+    endShape();
+
+    pop();
+  }
 }
 
 
@@ -358,26 +340,37 @@ void moveDirections(int down, int up, int right, int left, float speed) {
 }
 
 void keyPressed() {
-  float speed = 1.0;
-  // CAS Où L'ON REGARDE DROIT DEVANT SOI
-  if (center.x >= -135*5 && center.x <= 127*5)
+  float speed = 3.0;
+  // CAS OÙ L'ON REGARDE DROIT DEVANT SOI
+  if (center.x >= -135*4 && center.x <= 127*4)
     moveDirections(DOWN, UP, RIGHT, LEFT, speed);
-  // CAS Où L'ON REGARDE COMPLèTEMENT À GAUCHE
+  // CAS OÙ L'ON REGARDE COMPLÈTEMENT À GAUCHE
   else if (center.x <= -135*5)
     moveDirections(RIGHT, LEFT, UP, DOWN, speed);
   else
-    // CAS Où L'ON REGARDE COMPLèTEMENT À DROITE
+    // CAS OÙ L'ON REGARDE COMPLÈTEMENT À DROITE
     moveDirections(LEFT, RIGHT, DOWN, UP, speed);
 
   // pour monter
   if (keyCode == 'U')
     eye.z += speed;
-  // pour descendre, inutile d'aller plus bas que -180, on se retrouvera soit "dans" le terrain soit en-dessous (au niveau de l'espace)
+  // pour descendre, inutile d'aller plus bas que -190, on se retrouvera soit "dans" le terrain soit en-dessous (au niveau de la scène)
   else if (keyCode == 'D')
     eye.z = max(eye.z - speed, -190);
+
+  else if (keyCode == 'P')
+    pylonesOK = !pylonesOK;
+
+  else if (keyCode == 'T')
+    terrainOK = !terrainOK;
+    
+  else if (keyCode == 'R')
+    repereOK = !repereOK;
 }
 
+
 void mouseMoved() {
+  // [-1000, 1000] semble être un intervalle correct pour avoir assez de sensibilité sans pour autant causer de bugs...
   center.x = map(mouseX, 0, width, 1000, -1000);
   center.z = map(mouseY, 0, height, 1000, -1000);
   center.y = mouseY;
