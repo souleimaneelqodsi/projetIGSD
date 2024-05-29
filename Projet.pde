@@ -18,7 +18,7 @@ ArrayList<PVector> eoliennesCoord = new ArrayList<>(); // coordonnées de chaque
 // variables de statut : objet affiché ou pas
 boolean pylonesOK = true;
 boolean terrainOK = true;
-boolean repereOK = true;
+boolean repereOK = false;
 boolean eoliennesOK = true;
 
 void setup() {
